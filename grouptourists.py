@@ -122,27 +122,38 @@ print(resultsPOI2Group)
 print(dfNodesAvg)
 # random clustering (each day cluster the users)
 dfNodesRandom = dfNodesAvg
-#visitingPath1 = {}
+temVisitingPath = {}
 #visitingPath2 = {}
 randUserIDs = list(dfInterests['userID'])
 groupSize = int(math.floor(len(randUserIDs)/groupCount)) # get the approx size of each group
+visitedNodePerUer = {}
 for travelDay in range(2):
     currentID = 0
     random.shuffle(randUserIDs)
+    '''
     for i in range(groupCount):
         if i != groupCount:
             nextID = currentID + groupSize
         else:
             nextID = len(randUserIDs)
-        nextID = currentID + groupSize
-        groupUserList = randUserIDs[currentID:nextID]  # userIDs of all users in this group
-        currentID = nextID
-        tempResults = Ranpoi2groupOP(dfNodesRandom, dfInterests, groupUserList, startNode, endNode,
+    '''
+    #nextID = currentID + groupSize
+    groupUserList = randUserIDs[currentID:20]  # userIDs of all users in this group
+    #currentID = nextID
+    #temVisitingPath['group' + str(i + 1)] = groupUserList
+    print(groupUserList)
+    tempResults = Ranpoi2groupOP(dfNodesRandom, dfInterests, groupUserList, startNode, endNode,
+                                     budget, travelDay, startNodeVT, visitedNodePerUer)
+print(temVisitingPath)
+
+'''
+    tempResults = Ranpoi2groupOP(dfNodesRandom, dfInterests, groupUserList, startNode, endNode,
                                   budget, travelDay, startNodeVT)
-        tempResults['day'] = 'day1'
-        tempResults['cluster'] = 'randomByDay'
-        tempResults['groupID'] = i + 1
-        resultsPOI2Group = resultsPOI2GroupRd1.append(tempResults)
+    tempResults['day'] = 'day1'
+    tempResults['cluster'] = 'randomByDay'
+    tempResults['groupID'] = i + 1
+    resultsPOI2Group = resultsPOI2GroupRd1.append(tempResults)
+'''
 '''    
         if travelDay == 1:
             visitingPath1['group' + str(i+1)] = groupUserList
@@ -219,10 +230,11 @@ print(resultsPOI2GroupKmean)
 resultsPOI2Group = resultsPOI2Group.append(resultsPOI2GroupRd1)
 resultsPOI2Group = resultsPOI2Group.append(resultsPOI2GroupKmean)
 '''
-
+'''
 resultsPOI2Group.to_csv('resultstest.csv', sep='\t', encoding='utf-8')
 resultsMeanTem = calMean(budget,startNode)
 resultsMean = resultsMean.append(resultsMeanTem)
 
 
 resultsMean.to_csv('resultsMean.csv', sep='\t', encoding='utf-8')
+'''

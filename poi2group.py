@@ -1,6 +1,7 @@
 from tourrecomm import *
-import random
-import numpy as np
+from operator import add
+from functools import reduce
+
 def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT):
 
     results = pd.DataFrame(columns=['algo', 'startNode/endNode', 'budget', 'userID', 'totalPOI', 'totalCost', 'totalProfit', 'totalInterest' , 'reachEndNode', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
@@ -60,7 +61,7 @@ def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, d
     '''
     return resultPath
 
-def Ranpoi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT):
+def Ranpoi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT, visitedNodePerUer):
     userIntByTime = pd.DataFrame(columns=dfUserInt.columns)
 
     for i in range(len(groupUserList)):
@@ -73,8 +74,34 @@ def Ranpoi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget
     userIntByTime['userID'] = 'group'
 
     dfNodesPath = dfNodes.copy()
-    RantemPath = tourRecLPmultiObj(startNode, endNode, budget, dfNodesPath, None, userIntByTime, 0.5, False, startNodeVT)
-    return RantemPath
+    visitedNode = []
+    for user in groupUserList:
+        if user in visitedNodePerUer.keys():
+            print(user)
+            visitedNode.append(visitedNodePerUer[user])
+    if len(visitedNode) != 0:
+        visitedNode = reduce(add, visitedNode)
+        visitedNode = list(dict.fromkeys(visitedNode))
+    print(visitedNode)
+    for poi in visitedNode:
+        dfNodesPath = dfNodesPath[dfNodesPath['from'] != poi]
+    for poi in visitedNode:
+        dfNodesPath = dfNodesPath[dfNodesPath['to'] != poi]
+    dfNodesPath = dfNodesPath.reset_index(drop=True)
+    print(dfNodesPath)
+    ranTemPath = tourRecLPmultiObj(startNode, endNode, budget, dfNodesPath, None, userIntByTime, 0.5, False, startNodeVT)
+    #visitedNodePerUer = {}
+    # store user's visited nodes
+    for user in groupUserList:
+        if ranTemPath.empty is False:
+            for poi in ranTemPath.to:
+                if poi != startNode:
+                    visitedNodePerUer.setdefault(user, [])
+                    visitedNodePerUer[user].append(poi)
+
+    print(visitedNodePerUer)
+    print(len(visitedNodePerUer))
+    return ranTemPath
 
 
 

@@ -2,7 +2,7 @@ from tourrecomm import *
 from operator import add
 from functools import reduce
 
-def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT):
+def poi2groupOP(algo, dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT, visitedNodePerUsr):
 
     results = pd.DataFrame(columns=['algo', 'startNode/endNode', 'budget', 'userID', 'totalPOI', 'totalCost', 'totalProfit', 'totalInterest' , 'reachEndNode', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
     userIntByTime = pd.DataFrame(columns=dfUserInt.columns)
@@ -18,8 +18,14 @@ def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, d
 
     dfNodesPath = dfNodes.copy()
     dfNodesCal = dfNodes.copy()
-    resultPath = pd.DataFrame()
 
+    if algo == 'clusterOnce' or algo == 'clusterOnceKmeans':
+        resultPath = clusterOnceOP(dfNodesPath, startNode, endNode, budget, day, startNodeVT, userIntByTime)
+    elif algo == 'clusterPerDay':
+        temPath, visitedNodePerUsr = clusterPerDayOP(dfNodes, groupUserList, userIntByTime, startNode, endNode, budget, day, startNodeVT, visitedNodePerUsr)
+        print(visitedNodePerUsr)
+        return temPath
+    '''
     for loop in range(day):
         temPath = tourRecLPmultiObj(startNode, endNode, budget, dfNodesPath, None, userIntByTime, 0.5, False, startNodeVT)
         visitedNode = []
@@ -35,7 +41,7 @@ def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, d
             dfNodesPath = dfNodesPath[dfNodesPath['to'] != poi]
         dfNodesPath = dfNodesPath.reset_index(drop=True)
     resultPath = resultPath.reset_index(drop=True)
-
+    '''
     if len(resultPath.index) != 0:
         for tempUserID in groupUserList:
             tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
@@ -45,66 +51,89 @@ def poi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, d
             userInterest = userIntPerUser.copy()
             #print(userIntPerUser)
             stats = calcStats(resultPath, dfNodesCal, userInterest, endNode, startNodeVT)
-            results = results.append(pd.DataFrame([['resultPath',startNode,budget,tempUserID,stats.totalPOI.values[0],stats.totalDistance.values[0],stats.totalPopularity.values[0],stats.totalInterest.values[0],stats.completed.values[0],stats.totalPopInt.values[0],stats.maxInterest.values[0],stats.minInterest.values[0],stats.tour.values[0]]], columns = results.columns))
-    results = results.reset_index(drop = True)
-    print(results)
+            results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,stats.totalPOI.values[0],stats.totalDistance.values[0],stats.totalPopularity.values[0],stats.totalInterest.values[0],stats.completed.values[0],stats.totalPopInt.values[0],stats.maxInterest.values[0],stats.minInterest.values[0],stats.tour.values[0]]], columns = results.columns))
+    else:
+        for tempUserID in groupUserList:
+            tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
+            userIntPerUser= pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural','Amusement','Shopping','Structure','Sport','Beach']) # determine indv user interest
+            userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]:'userID', list(userIntPerUser)[1]:'category', list(userIntPerUser)[2]:'catIntLevel'})
+            results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]], columns = results.columns))
 
-    '''
-    else {
-    for (tempUserID in groupUserList) {
-    tempDfUserInt = dfUserInt[dfUserInt$userID == tempUserID, ]  # determine indv user interest
-    userIntPerUser = melt(tempDfUserInt, id.vars=c("userID"))  # determine indv user interest
-    names(userIntPerUser) = c("userID", "category", "catIntLevel")  # determine indv user interest
-    results = rbind(results, data.frame(algo="tourRecLPmultiObjIntTime_i1", startNode=startNode, endNode=endNode, budget=budget, userID=tempUserID, totalPOI=NA, totalCost=NA, totalProfit=NA, totalInterest=NA, reachEndNode=NA, totalPopInt=NA, maxInterest=NA, minInterest=NA, tour=NA) )
-    }
-    }
-    '''
+    results = results.reset_index(drop=True)
+    print(results)
+    return results
+
+
+def clusterOnceOP(dfNodesPath, startNode, endNode, budget, day, startNodeVT, userIntByTime):
+    resultPath = pd.DataFrame()
+    for loop in range(day):
+        temPath = tourRecLPmultiObj(startNode, endNode, budget, dfNodesPath, None, userIntByTime, 0.5, False, startNodeVT)
+        visitedNode = []
+        temPath['day'] = 'day ' + str(loop + 1)
+        resultPath = resultPath.append(temPath)
+        for index, row in temPath.iterrows():
+            if row['from'] != startNode:
+                visitedNode.append(row['from'])
+        print('visitedNode: '+ str(visitedNode))
+        for poi in visitedNode:
+            dfNodesPath = dfNodesPath[dfNodesPath['from'] != poi]
+        for poi in visitedNode:
+            dfNodesPath = dfNodesPath[dfNodesPath['to'] != poi]
+        dfNodesPath = dfNodesPath.reset_index(drop=True)
+    resultPath = resultPath.reset_index(drop=True)
     return resultPath
 
-def Ranpoi2groupOP(dfNodes, dfUserInt, groupUserList, startNode, endNode, budget, day, startNodeVT, visitedNodePerUer):
+
+def clusterPerDayOP(dfNodesPath, groupUserList, userIntByTime, startNode, endNode, budget, day, startNodeVT, visitedNodePerUsr):
+
+    '''
     userIntByTime = pd.DataFrame(columns=dfUserInt.columns)
 
     for i in range(len(groupUserList)):
         userIntByTime = userIntByTime.append(dfUserInt.loc[dfUserInt['userID'] == groupUserList[i]])
 
-    userIntByTime = userIntByTime.drop(['userID'], axis=1)
+    userIntByTime = userIntByTime.drop(['userID'], axis = 1)
     userIntByTime = userIntByTime.mean()
     userIntByTime = userIntByTime.reset_index()
     userIntByTime = userIntByTime.rename(columns={'index': 'category', 0: 'catIntLevel'})
     userIntByTime['userID'] = 'group'
 
     dfNodesPath = dfNodes.copy()
+    '''
     visitedNode = []
     for user in groupUserList:
-        if user in visitedNodePerUer.keys():
+        if user in visitedNodePerUsr.keys():
             print(user)
-            visitedNode.append(visitedNodePerUer[user])
+            visitedNode.append(visitedNodePerUsr[user])
     if len(visitedNode) != 0:
         visitedNode = reduce(add, visitedNode)
         visitedNode = list(dict.fromkeys(visitedNode))
     print(visitedNode)
     for poi in visitedNode:
-        dfNodesPath = dfNodesPath[dfNodesPath['from'] != poi]
+        if poi != startNode:
+            dfNodesPath = dfNodesPath[dfNodesPath['from'] != poi]
     for poi in visitedNode:
-        dfNodesPath = dfNodesPath[dfNodesPath['to'] != poi]
+        if poi != startNode:
+            dfNodesPath = dfNodesPath[dfNodesPath['to'] != poi]
     dfNodesPath = dfNodesPath.reset_index(drop=True)
     print(dfNodesPath)
     ranTemPath = tourRecLPmultiObj(startNode, endNode, budget, dfNodesPath, None, userIntByTime, 0.5, False, startNodeVT)
+    ranTemPath['day'] = 'day ' + str(day + 1)
     #visitedNodePerUer = {}
     # store user's visited nodes
     for user in groupUserList:
         if ranTemPath.empty is False:
             for poi in ranTemPath.to:
-                if poi != startNode:
-                    visitedNodePerUer.setdefault(user, [])
-                    visitedNodePerUer[user].append(poi)
+                #if poi != startNode:
+                    visitedNodePerUsr.setdefault(user, [])
+                    visitedNodePerUsr[user].append(poi)
 
-    print(visitedNodePerUer)
-    print(len(visitedNodePerUer))
-    return ranTemPath
+    print(visitedNodePerUsr)
+    print(len(visitedNodePerUsr))
+    return ranTemPath, visitedNodePerUsr
 
 
-
+# calculate the statistic for each user in random and kmeans clustering
 def calcStats(solnRecTour, dfNodes, userInterest, endNode, startNodeVT):
 
 
@@ -136,68 +165,63 @@ def calcStats(solnRecTour, dfNodes, userInterest, endNode, startNodeVT):
             interestLevels.append(userInterest.loc[userInterest['category'] == tempCategory, "catIntLevel"].values[0])
         tour.append(tempFrom)
     tour.append(solnRecTour.iloc[len(solnRecTour.index) -1]['to'])
+    tour = '-'.join(str(poi) for poi in tour)
     totalPopInt = 0.5 * totalPopularity + 0.5 * totalInterest
     completed = (solnRecTour.iloc[len(solnRecTour.index)-1]['to'] == endNode) & (len(solnRecTour.index) != 0)
     stats = pd.DataFrame([[totalPOI, totalDistance, totalPopularity, totalInterest, completed, totalPopInt, max(interestLevels), min(interestLevels), tour]], columns=['totalPOI', 'totalDistance', 'totalPopularity', 'totalInterest', 'completed', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
     print(stats)
     return stats
 
+# calculate the statistics for groups that users are clustered everyday
+def calcStatsRan(visitedNodePerUsr, dfNodes, dfUserInt, startNode, budget):
 
 
+    results = pd.DataFrame(columns=['algo', 'startNode/endNode', 'budget', 'userID', 'totalPOI', 'totalCost', 'totalProfit',
+                 'totalInterest', 'reachEndNode', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
 
+    for user in visitedNodePerUsr.keys():
+        tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == user]
+        userIntPerUser = pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural', 'Amusement', 'Shopping', 'Structure', 'Sport', 'Beach'])  # determine indv user interest
+        userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]: 'userID', list(userIntPerUser)[1]: 'category', list(userIntPerUser)[2]: 'catIntLevel'})
+        userInterest = userIntPerUser.copy()
+        dfNodesCal = dfNodes.copy()
 
+        dfNodesCal.profit = dfNodesCal.profit / max(dfNodesCal.profit)
+        userInterest.catIntLevel = userInterest.catIntLevel / max(userInterest.catIntLevel)
 
-    '''
-        if ( tempCategory % in % userInterest$category ) {
-        totalInterest = totalInterest + userInterest[userInterest$category == tempCategory, "catIntLevel"]
-        interestLevels = c(interestLevels, userInterest[userInterest$category == tempCategory, "catIntLevel"])
+        totalDistance = 0
+        totalPopularity = 0
+        totalInterest = 0
+        totalPopInt = 0
+        interestLevels = []
+        indvUsrPath = visitedNodePerUsr[user]
+        totalPOI = len(indvUsrPath) - 4
+        print(indvUsrPath)
+        for i in range(len(indvUsrPath) - 1):
+            tempFrom = indvUsrPath[i]
+            tempTo = indvUsrPath[i + 1]
+            tempCost = dfNodesCal.loc[(dfNodesCal['from'] == tempFrom) & (dfNodesCal['to'] == tempTo), 'cost'].values[0]
 
-        tour = c(tour, tempFrom)
-    '''
+            tempProfit = dfNodesCal.loc[(dfNodesCal['from'] == tempFrom) & (dfNodesCal['to'] == tempTo), 'profit'].values[0]
 
-        #results = solnLPmultiObjIntTime_i1.append(solnLPmultiObjIntTime_i2, sort=False)
+            tempCategory = dfNodesCal.loc[(dfNodesCal['from'] == tempFrom) & (dfNodesCal['to'] == tempTo), 'category'].values[0]
+            print('totalcost: ' + str(tempCost))
+            totalDistance = totalDistance + tempCost
+            totalPopularity = totalPopularity + tempProfit
+            if tempCategory in list(userInterest['category']):
+                totalInterest = totalInterest + userInterest.loc[userInterest['category'] == tempCategory, "catIntLevel"].values[0]
+                interestLevels.append(userInterest.loc[userInterest['category'] == tempCategory, "catIntLevel"].values[0])
+                print(interestLevels)
+            totalPopInt = 0.5 * totalPopularity + 0.5 * totalInterest
+            completed = True
+        tour = '-'.join(str(poi) for poi in indvUsrPath)
+        stats = pd.DataFrame([[totalPOI, totalDistance, totalPopularity, totalInterest, completed, totalPopInt, max(interestLevels), min(interestLevels), tour]], columns=['totalPOI', 'totalDistance', 'totalPopularity', 'totalInterest', 'completed', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
+        results = results.append(pd.DataFrame([['ClusterPerDay', startNode, budget, user, stats.totalPOI.values[0],
+                                      stats.totalDistance.values[0], stats.totalPopularity.values[0],
+                                      stats.totalInterest.values[0], stats.completed.values[0],
+                                      stats.totalPopInt.values[0], stats.maxInterest.values[0],
+                                      stats.minInterest.values[0], stats.tour.values[0]]], columns=results.columns))
 
-'''
-    solnLPmultiObjIntTime_i1 = tourRecLPmultiObj(startNode, endNode, budget, dfNodes, None, userIntByTime, 0.5, False)
-    results = solnLPmultiObjIntTime_i1.reset_index(drop=True)
+    results = results.reset_index(drop=True)
+    print(results)
     return results
-'''
-
-'''
-    if day == 1:
-        solnLPmultiObjIntTime_i1 = tourRecLPmultiObj(startNode, endNode, budget, dfNodes, None, userIntByTime, 0.5, False)
-        results = solnLPmultiObjIntTime_i1.reset_index(drop = True)
-        return results
-
-    else:
-        # construct the first day's path
-        solnLPmultiObjIntTime_i1 = tourRecLPmultiObj(startNode, endNode, budget, dfNodes, None, userIntByTime, 0.5,
-                                                     False)
-        # remove the visited pois
-        visitedNode = []
-        for index, row in solnLPmultiObjIntTime_i1.iterrows():
-            if row['from'] != startNode:
-                visitedNode.append(row['from'])
-                print(row['from'])
-        print(visitedNode)
-        for poi in visitedNode:
-            dfNodes = dfNodes[dfNodes['from'] != poi]
-        for poi in visitedNode:
-            dfNodes = dfNodes[dfNodes['to'] != poi]
-        dfNodes = dfNodes.reset_index(drop=True)
-
-        # construct the second day's path
-        solnLPmultiObjIntTime_i2 = tourRecLPmultiObj(startNode, endNode, budget, dfNodes, None, userIntByTime, 0.5,
-                                                     False)
-        # print(solnLPmultiObjIntTime_i1)
-        # print(solnLPmultiObjIntTime_i2)
-        # reset the index of each day's path and combine them into 1 dataframe
-        solnLPmultiObjIntTime_i1['day'] = 'day1'
-        solnLPmultiObjIntTime_i1 = solnLPmultiObjIntTime_i1.reset_index(drop=True)
-        solnLPmultiObjIntTime_i2['day'] = 'day2'
-        solnLPmultiObjIntTime_i2 = solnLPmultiObjIntTime_i2.reset_index(drop=True)
-
-        results = solnLPmultiObjIntTime_i1.append(solnLPmultiObjIntTime_i2, sort=False)
-
-        return results
-'''

@@ -38,3 +38,5 @@ The dataset used can be found at https://sites.google.com/site/limkwanhui/dataco
 - 'intCosSimBin': The cosine similarity of each group using the binary value, that means all the non-zero continues values are converted to 1
 - 'topintRatio': Calculate the largest ratio of users in the group
 - 'intJaccard': Calculate the Jaccard similarity for each group
+
+**results_average.csv**: The average results for each iteration

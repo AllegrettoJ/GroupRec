@@ -1,48 +1,67 @@
 import pandas as pd
 from scipy import spatial
 from scipy.spatial.distance import cosine
+import sklearn.metrics
 import statistics
 
 def calMean(budget,startNode):
-    results = pd.read_csv('resultstest.csv')
-    print(results.to_string())
-    resultsMean = results.groupby('cluster')['totalPopInt'].sum().reset_index(name='totalprofit')
-    print(resultsMean)
-    #resultsMean = results.groupby('cluster')['profit'].mean().reset_index(name='avgProfit')
+    results = pd.read_csv('recResults_statistic.csv')
+    resultsMean = results.groupby('cluster')['totalPopInt','maxInterest', 'minInterest'].sum().reset_index()
+    resultsMean.totalPopInt = resultsMean.totalPopInt/100
+    resultsMean.maxInterest = resultsMean.maxInterest / 100
+    resultsMean.minInterest = resultsMean.minInterest / 100
     resultsMean['budget'] = budget
     resultsMean['startNode'] = startNode
-    '''
-    sum = results.drop_duplicates(subset=['profit'], keep='first')
-    sum = sum.groupby('cluster')['profit'].sum().reset_index(name='avgProfit')
-    print(sum)
-    print(results['profit'].idxmax())
-    '''
-    print(resultsMean)
+
+    print(resultsMean.to_string())
     return resultsMean
 
-def calcIntCosSim(userInGroup, dfInterest, binaryInt):
+# Calculate the cosine similarity of users in the same group [userIntGroup] based on their interests [dfInterests]
+def calcIntCosSim(userIntGroup, dfInterests, binaryInt):
     cosVec =[]
-    results = []
-    userIntByTime = pd.DataFrame(columns=dfInterest.columns)
-    for i in range(len(userInGroup)):
-        userIntByTime = userIntByTime.append(dfInterest.loc[dfInterest['userID'] == userInGroup[i]])
+    userIntByTime = pd.DataFrame(columns=dfInterests.columns)
+    for i in range(len(userIntGroup)):
+        userIntByTime = userIntByTime.append(dfInterests.loc[dfInterests['userID'] == userIntGroup[i]])
     userIntByTime = userIntByTime.drop(['userID'], axis=1)
-    print(userIntByTime)
     userIntByTime = userIntByTime.reset_index(drop=True)
     if binaryInt == True:
         userIntByTime[userIntByTime != 0] = 1
-    print(userIntByTime)
     for i in range(len(userIntByTime.index)):
         for j in range(len(userIntByTime.index)):
             if i != j:
                 cosTem = 1 - cosine(userIntByTime.iloc[i], userIntByTime.iloc[j])
                 cosVec.append(cosTem)
 
-    print(len(cosVec))
-    print(cosVec)
     cos = statistics.mean(cosVec)
-    print(statistics.mean(cosVec))
     return cos
 
+# Calculate the Jaccard similarity of users in the same group [userIntGroup] based on their interests [dfInterests]
+def calcIntJaccard(userIntGroup, dfInterests):
 
-#calMean(budget = 300,startNode=7)
+    jacVec = []
+    userIntByTime = pd.DataFrame(columns=dfInterests.columns)
+    for i in range(len(userIntGroup)):
+        userIntByTime = userIntByTime.append(dfInterests.loc[dfInterests['userID'] == userIntGroup[i]])
+    userIntByTime = userIntByTime.drop(['userID'], axis=1)
+    userIntByTime[userIntByTime != 0] = 1
+
+    for i in range(len(userIntByTime.index)):
+        for j in range(len(userIntByTime.index)):
+            if i != j:
+                jacTem = sklearn.metrics.jaccard_similarity_score(userIntByTime.iloc[i], userIntByTime.iloc[j])
+                jacVec.append(jacTem)
+
+    jac = statistics.mean(jacVec)
+    return jac
+
+# Calculate the largest ratio of users in the group [userIntGroup] with the same top interests in [dfInterests]
+def calcTopIntRatio(userIntGroup, dfInterests):
+    userIntByTime = pd.DataFrame(columns=dfInterests.columns)
+    for i in range(len(userIntGroup)):
+        userIntByTime = userIntByTime.append(dfInterests.loc[dfInterests['userID'] == userIntGroup[i]])
+    userIntByTime = userIntByTime.drop(['userID'], axis=1)
+    userIntByTime['mostInt'] = userIntByTime.idxmax(axis = 1)
+    topIntCount = userIntByTime.groupby(['mostInt'], as_index=False).size().reset_index(name='Freq')
+    topIntRatio = max(topIntCount['Freq'])/len(userIntByTime.index)
+    return topIntRatio
+

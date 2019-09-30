@@ -21,27 +21,27 @@ def poi2groupOP(algo, dfNodes, dfUserInt, groupUserList, startNode, endNode, bud
 
     if algo == 'clusterOnce' or algo == 'clusterOnceKmeans':
         resultPath = clusterOnceOP(dfNodesPath, startNode, endNode, budget, day, userIntByTime)
+
+        if len(resultPath.index) != 0:
+            for tempUserID in groupUserList:
+                tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
+                #print(tempDfUserInt)
+                userIntPerUser= pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural','Amusement','Shopping','Structure','Sport','Beach']) # determine indv user interest
+                userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]:'userID', list(userIntPerUser)[1]:'category', list(userIntPerUser)[2]:'catIntLevel'})
+                userInterest = userIntPerUser.copy()
+                #print(userIntPerUser)
+                stats = calcStats(resultPath, dfNodesCal, userInterest, endNode, day)
+                results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,stats.totalPOI.values[0],stats.totalDistance.values[0],stats.totalPopularity.values[0],stats.totalInterest.values[0],stats.completed.values[0],stats.totalPopInt.values[0],stats.maxInterest.values[0],stats.minInterest.values[0],stats.tour.values[0]]], columns = results.columns))
+        else:
+            for tempUserID in groupUserList:
+                tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
+                userIntPerUser= pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural','Amusement','Shopping','Structure','Sport','Beach']) # determine indv user interest
+                userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]:'userID', list(userIntPerUser)[1]:'category', list(userIntPerUser)[2]:'catIntLevel'})
+                results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]], columns = results.columns))
     elif algo == 'clusterPerDay':
         temPath, visitedNodePerUsr = clusterPerDayOP(dfNodes, groupUserList, userIntByTime, startNode, endNode, budget, day, visitedNodePerUsr)
         print(visitedNodePerUsr)
         return temPath
-
-    if len(resultPath.index) != 0:
-        for tempUserID in groupUserList:
-            tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
-            #print(tempDfUserInt)
-            userIntPerUser= pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural','Amusement','Shopping','Structure','Sport','Beach']) # determine indv user interest
-            userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]:'userID', list(userIntPerUser)[1]:'category', list(userIntPerUser)[2]:'catIntLevel'})
-            userInterest = userIntPerUser.copy()
-            #print(userIntPerUser)
-            stats = calcStats(resultPath, dfNodesCal, userInterest, endNode)
-            results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,stats.totalPOI.values[0],stats.totalDistance.values[0],stats.totalPopularity.values[0],stats.totalInterest.values[0],stats.completed.values[0],stats.totalPopInt.values[0],stats.maxInterest.values[0],stats.minInterest.values[0],stats.tour.values[0]]], columns = results.columns))
-    else:
-        for tempUserID in groupUserList:
-            tempDfUserInt = dfUserInt.loc[dfUserInt['userID'] == tempUserID]  # determine indv user interest
-            userIntPerUser= pd.melt(tempDfUserInt, id_vars=['userID'], value_vars=['Cultural','Amusement','Shopping','Structure','Sport','Beach']) # determine indv user interest
-            userIntPerUser = userIntPerUser.rename(columns={list(userIntPerUser)[0]:'userID', list(userIntPerUser)[1]:'category', list(userIntPerUser)[2]:'catIntLevel'})
-            results = results.append(pd.DataFrame([[algo,startNode,budget,tempUserID,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan,np.nan]], columns = results.columns))
     results = results.reset_index(drop=True)
     print(results)
     return results
@@ -102,7 +102,7 @@ def clusterPerDayOP(dfNodesPath, groupUserList, userIntByTime, startNode, endNod
 
 
 # calculate the statistic for each user in random and kmeans clustering
-def calcStats(solnRecTour, dfNodesCal, userInterest, endNode):
+def calcStats(solnRecTour, dfNodesCal, userInterest, endNode, day):
 
     dfNodes = dfNodesCal.copy()
     # normalize the popularity and interest to [0,1]
@@ -111,7 +111,7 @@ def calcStats(solnRecTour, dfNodesCal, userInterest, endNode):
     #print(userInterest)
 
     # calculate the total popularity and interest for the entire tour
-    totalPOI = len(solnRecTour.index) - 1
+    totalPOI = len(solnRecTour.index) - day
     totalDistance = 0
     totalPopularity = 0
     totalInterest = 0
@@ -193,5 +193,5 @@ def calcStatsRan(visitedNodePerUsr, dfNodes, dfUserInt, startNode, budget, day):
                                       stats.minInterest.values[0], stats.tour.values[0]]], columns=results.columns))
 
     results = results.reset_index(drop=True)
-    #print(results)
+    print(results)
     return results

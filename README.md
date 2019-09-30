@@ -9,3 +9,6 @@ poi2group.py: This file is to find the each group's visiting interests from tour
 tourrecomm.py: This file contains the integer progrmming formulation, including obejctive function, decision variables, and constraints.  
 calcinterest.py: This file is used to calculate the average visiting time for each POI.  
 calcStat.py: We use this file to do different statistics calculation, such as Cosine similarity, Jaccard similarity.  
+costProfCat-ToroPOI-all.csv: Sample input data in the form of a cost-profit table, with the following columns/fields: "fromNode", "toNode", "cost", "profit" and "category"  
+userVisits-Toro-allPOI.csv: Sample input data in the form of user-POI visits, with the following columns/fields: "photoID", "userID", "dateTaken", "poiID", "poiTheme", "poiFreq", "seqID"  
+userInt-URelTime-Toro.csv: Sample input data in the form of user interest levels, with the following columns/fields: "userID", "Cultural", "Amusement", "Shopping", "Structure", "Sport", "Beach"  

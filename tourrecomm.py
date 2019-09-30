@@ -3,20 +3,20 @@ import numpy as np
 from pulp import *
 from scipy.optimize import linprog
 
-def tourRecLPmultiObj(startNode, endNode, budget, dfNodesTour, subtourCons, userInterest, intWeight, normInterest, startNodeVT):
+def tourRecLPmultiObj(startNode, endNode, budget, dfNodesTour, subtourCons, userInterest, intWeight, normInterest):
 
     dfNodes = dfNodesTour.copy()
-    results = tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest, startNodeVT)
+    results = tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest)
 
     while len(results.columns)==len(dfNodes.index):
         subtourCons = results
-        results = tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest, startNodeVT)
+        results = tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest)
         if len(results.columns)==len(dfNodes.index):
             subtourCons = results
 
     return (results)
 
-def tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest, startNodeVT):
+def tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, userInterest, intWeight, normInterest):
 
     # get the links that connect either the start and/or end nodes
     startNodeList = list(dfNodes[dfNodes['from']== startNode].index)
@@ -87,14 +87,11 @@ def tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, use
     
     for i in range(len(dfNodes.index)): # combine POI Popularity and User Interest into a single multi-objective function
         intLevel = 0  # default interest level = 0, if the user has never visited POI of this category
-        if any(userInterest.category == dfNodes.iloc[i,:]['category']):
+        if any(userInterest.category == dfNodes.iloc[i,:]['category']) & (dfNodes.iloc[i]['to'] != startNode):
             intLevel = userInterest.loc[userInterest.category == dfNodes.iloc[i,:]['category']][['catIntLevel']].values[0]
             tempValue = dfNodes.iloc[i]["profit"]
             dfNodes.at[i, 'profit'] = (1 - intWeight)* tempValue + intWeight * intLevel # the combined multi-objective function
 
-
-    # the profit of startNode equals 0 since we assume it is the 'Travel Agency'
-    dfNodes.loc[dfNodes['to'] == startNode, 'profit'] = 0
 
     # create an LP model
     # set up decision variable for each  poi X to poi Y
@@ -105,7 +102,7 @@ def tourrecommendationloop(startNode, endNode, budget, dfNodes, subtourCons, use
 
     # build our constraints
     # constraint cost <= budget
-    model += pulp.lpSum(visiting_status[is_visit] * nodeBudget.iloc[0][is_visit] for is_visit in dfNodes.index) - startNodeVT <= budget
+    model += pulp.lpSum(visiting_status[is_visit] * nodeBudget.iloc[0][is_visit] for is_visit in dfNodes.index) <= budget
 
 
     # constraint start from a certain node

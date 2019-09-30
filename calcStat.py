@@ -4,14 +4,14 @@ from scipy.spatial.distance import cosine
 import sklearn.metrics
 import statistics
 
-def calMean(budget,startNode):
-    results = pd.read_csv('recResults_statistic.csv')
+def calMean(results, budget,startNode, iter, numOfUsr):
     resultsMean = results.groupby('cluster')['totalPopInt','maxInterest', 'minInterest'].sum().reset_index()
-    resultsMean.totalPopInt = resultsMean.totalPopInt/100
-    resultsMean.maxInterest = resultsMean.maxInterest / 100
-    resultsMean.minInterest = resultsMean.minInterest / 100
+    resultsMean.totalPopInt = resultsMean.totalPopInt/numOfUsr
+    resultsMean.maxInterest = resultsMean.maxInterest / numOfUsr
+    resultsMean.minInterest = resultsMean.minInterest / numOfUsr
     resultsMean['budget'] = budget
     resultsMean['startNode'] = startNode
+    resultsMean['iter'] = iter + 1
 
     print(resultsMean.to_string())
     return resultsMean

@@ -3,4 +3,4 @@ These python codes aim to recommend personalized group tours for different trave
 If you use these codes or dataset, please cite the following paper:
 1.) Kwan Hui Lim, Jeffrey Chan, Christopher Leckie and Shanika Karunasekera. "Towards Next Generation Touring: Personalized Group Tours". In Proceedings of the 26th International Conference on Automated Planning and Scheduling (ICAPS'16). Pg 412-420. Jun 2016.
 
-#Included Files
+# Included Files

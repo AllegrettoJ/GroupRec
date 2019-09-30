@@ -15,7 +15,7 @@ The dataset used can be found at https://sites.google.com/site/limkwanhui/dataco
 **userVisits-Toro-allPOI.csv**: Sample input data in the form of user-POI visits, with the following columns/fields: "photoID", "userID", "dateTaken", "poiID", "poiTheme", "poiFreq", "seqID"  
 **userInt-URelTime-Toro.csv**: Sample input data in the form of user interest levels, with the following columns/fields: "userID", "Cultural", "Amusement", "Shopping", "Structure", "Sport", "Beach"  
 ## Results Files
-**recommend_POI_Results.csv**:  Calculate statistics of Tour Solution
+**recommend_POI_Results.csv**:  The results of Tour Solution
 ### Parameters
 - 'algo': The method used to do the clustering 
 - 'startNode/endNode': The start and end node for the itinerary. We assume all the group has the same start and end node everyday. 
@@ -29,6 +29,11 @@ The dataset used can be found at https://sites.google.com/site/limkwanhui/dataco
 - 'maxInterest': User's maximum interset of category which is also recommended to the whole Itinerary
 - 'minInterest': User's minimum interset of category which is also recommended to the whole Itinerary
 - 'tour': The total tour of itinerary, using the '-' to link two POIs
-**results_statistics.csv**
-
-    
+**results_statistics.csv**: The statistics calculation of each group
+### Parameters
+- 'iter': The number of current iteration, there are total 335 loops
+- 'groupSize': The number of users in the group
+- 'intCosSim': The cosine similarity of each group
+- 'intCosSimBin': The cosine similarity of each group using the binary value, that means all the non-zero continues values are converted to 1
+- 'topintRatio': Calculate the largest ratio of users in the group
+- 'intJaccard': Calculate the Jaccard similarity for each group

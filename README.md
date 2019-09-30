@@ -17,5 +17,16 @@ userInt-URelTime-Toro.csv: Sample input data in the form of user interest levels
 ## Results Files
 recommend_POI_Results.csv:  Calculate statistics of Tour Solution
 ### Parameters
-- 'algo', 'startNode/endNode', 'budget', 'userID', 'totalPOI', 'totalCost', 'totalProfit', 'totalInterest' , 'reachEndNode', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
+- 'algo': The method used to do the clustering 
+- 'startNode/endNode': The start and end node for the itinerary. We assume all the group has the same start and end node everyday. 
+- 'budget': The time budget for one day. The budget is calculated from the real travelling history from userVisits-Toro-allPOI.csv.  
+- 'totalPOI': How many POIs user visited (the startnode and endnode are not counted)
+- 'totalCost': The total time used for the itinerary, including visiting time and travelling time
+- 'totalProfit': The total popularity of the POIs user visited
+- 'totalInterest': Each user's total interests for the POIs'category he/she visited
+- 'reachEndNode': Whether the ideal itineray is found. If found, reachEndNode = True
+- 'totalPopInt': totalPopInt is to calculate both popularity of POIs and each user's preference. The fomulation is totalPopInt = 0.5 * totalProfit + 0.5 TotalInterest. We use 0.5 as the weight between totalProfit and totalInterest.
+- 'maxInterest': In terms of the whole itinerary, the category of POI which has the miximum
+- 'minInterest': In terms of the whole itinerary, the category of POI that meets the user's interest
+- 'tour': 
     

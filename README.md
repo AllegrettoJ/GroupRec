@@ -15,7 +15,7 @@ costProfCat-ToroPOI-all.csv: Sample input data in the form of a cost-profit tabl
 userVisits-Toro-allPOI.csv: Sample input data in the form of user-POI visits, with the following columns/fields: "photoID", "userID", "dateTaken", "poiID", "poiTheme", "poiFreq", "seqID"  
 userInt-URelTime-Toro.csv: Sample input data in the form of user interest levels, with the following columns/fields: "userID", "Cultural", "Amusement", "Shopping", "Structure", "Sport", "Beach"  
 ## Results Files
-recommend_POI_Results.csv:  Calculate statistics of Tour Solution
+**recommend_POI_Results.csv**:  Calculate statistics of Tour Solution
 ### Parameters
 - 'algo': The method used to do the clustering 
 - 'startNode/endNode': The start and end node for the itinerary. We assume all the group has the same start and end node everyday. 
@@ -29,4 +29,5 @@ recommend_POI_Results.csv:  Calculate statistics of Tour Solution
 - 'maxInterest': User's maximum interset of category which is also recommended to the whole Itinerary
 - 'minInterest': User's minimum interset of category which is also recommended to the whole Itinerary
 - 'tour': The total tour of itinerary, using the '-' to link two POIs
+results_statistics.csv
     

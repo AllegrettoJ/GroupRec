@@ -26,7 +26,7 @@ recommend_POI_Results.csv:  Calculate statistics of Tour Solution
 - 'totalInterest': Each user's total interests for the POIs'category he/she visited
 - 'reachEndNode': Whether the ideal itineray is found. If found, reachEndNode = True
 - 'totalPopInt': totalPopInt is to calculate both popularity of POIs and each user's preference. The fomulation is totalPopInt = 0.5 * totalProfit + 0.5 TotalInterest. We use 0.5 as the weight between totalProfit and totalInterest.
-- 'maxInterest': In terms of the whole itinerary, the category of POI which has the miximum
-- 'minInterest': In terms of the whole itinerary, the category of POI that meets the user's interest
-- 'tour': 
+- 'maxInterest': User's maximum interset of category which is also recommended to the whole Itinerary
+- 'minInterest': User's minimum interset of category which is also recommended to the whole Itinerary
+- 'tour': The total tour of itinerary, using the '-' to link two POIs
     

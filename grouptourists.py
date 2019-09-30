@@ -37,7 +37,6 @@ dfNodesAvg = dfNodes.copy()
 for poi in range(len(dfavgDuration)):
     dfNodesAvg.loc[dfNodesAvg['to'] == dfavgDuration.poiID[poi], 'cost'] = dfavgDuration.avgDuration[poi]/60 + dfNodesAvg.cost
     #dfNodesAvg.loc[dfNodesAvg['to'] == dfavgDuration.poiID[poi], 'avgDuration'] = dfavgDuration.avgDuration[poi]/60
-#print(dfavgDuration)
 
 # pre-processing
 dfVisits = dfVisits.drop_duplicates(subset=['seqID', 'poiID'])
@@ -59,7 +58,9 @@ resultsPOI2Group = pd.DataFrame()
 resultsPOI2GroupRanByDay = pd.DataFrame()
 resultsPOI2GroupKmean = pd.DataFrame()
 
-#for loops in range(2):
+# data frame to hold overall results in the form "algoName", "iteration count", "groupSize", "interest cosine similarity (continuous)", "interest cosine similarity (binary)", "ratio of common top interest"
+results = pd.DataFrame(columns=['algo', 'iter', 'groupSize', 'intCosSim', 'intCosSimBin', 'topintRatio', 'intJaccard'])
+
 
 # iteratively test the various user2group and poi2group algorithms for X no. of times
 #for loopNo in range(totalLoops):
@@ -71,16 +72,17 @@ tempSeqID = dfVisits.seqID.unique()[0]
 tempDfVisits = dfVisits[dfVisits.seqID == tempSeqID]  # get subset of [dfVisits] of this visit sequence [tempSeqID]
 startNode = tempDfVisits['poiID'].iloc[0] # since [dfVisits] is ordered by userID and time, the startNode is the first entry
 endNode = startNode
+
+# set up endNode profit and visiting time to 0
+startNodeVT = dfavgDuration.loc[dfavgDuration.poiID == startNode].iloc[0]['avgDuration']/60 # calculate endNode visiting time
+dfNodesAvg.loc[dfNodesAvg['to'] == startNode, 'cost'] -= startNodeVT
+dfNodesAvg.loc[dfNodesAvg['to'] == startNode, 'profit'] = 0
 #endNode = tempDfVisits['poiID'].iloc[len(tempDfVisits) - 1] # similarly, endNode is the last entry
 
 
 # budget will be the actual distance covered between the POIs in the [tempDfVisits]
-#budget  = random.randrange(5,9,1) * 60 #  budget is randomly selected from 5hr to 8hr
-startNodeVT = dfavgDuration.loc[dfavgDuration.poiID == startNode].iloc[0]['avgDuration']/60
+# budget  = random.randrange(5,9,1) * 60 #  budget is randomly selected from 5hr to 8hr
 budget = 0
-#2* dfNodesAvg.loc[dfNodesAvg['to'] == startNode, 'avgDuration'].iloc[0]
-
-
 for i in range(len(tempDfVisits)-1):
     budget = budget + dfNodesAvg.loc[(dfNodesAvg['from'] == tempDfVisits['poiID'].iloc[i]) & (dfNodesAvg['to'] == tempDfVisits['poiID'].iloc[i+1]), 'cost'].values[0]
 
@@ -93,11 +95,9 @@ print('startNode:' + str(startNode))
 print('travelDay: ' + str(day))
 
 
-print(dfInterests)
-print(dfNodesAvg)
-
-
+# record start time
 rantime = time.time()
+
 # random clustering (cluster only once)
 randUserIDs = list(dfInterests['userID'])
 random.shuffle(randUserIDs)
@@ -112,27 +112,23 @@ for i in range(groupCount):
 
 #nextID = currentID + groupSize
     groupUserList = randUserIDs[currentID:nextID] # userIDs of all users in this group
-    
-    cos1 = calcIntCosSim(groupUserList, dfInterests, True)
-    cos2 = calcIntCosSim(groupUserList, dfInterests, False)
-    print('cosT: ' + str(cos1))
-    print('cosF: ' + str(cos2))
-    
-    #print(groupUserList)
+
+    # perform the user2group assignment and record the results
+    results = results.append(pd.DataFrame([['randomOnce', 1, len(groupUserList), calcIntCosSim(groupUserList, dfInterests, True), calcIntCosSim(groupUserList, dfInterests, False), calcTopIntRatio(groupUserList, dfInterests), calcIntJaccard(groupUserList, dfInterests)]], columns = results.columns))
+    print(results)
     currentID = nextID
-    tempResults = poi2groupOP('clusterOnce', dfNodesAvg, dfInterests, groupUserList, startNode, endNode, budget, day, startNodeVT, visitedNodePerUsr)
+
+    # perform the poi2group recommendation and record the results
+    tempResults = poi2groupOP('clusterOnce', dfNodesAvg, dfInterests, groupUserList, startNode, endNode, budget, day, visitedNodePerUsr)
     tempResults['cluster'] = 'random'
     tempResults['groupID'] = i + 1
     resultsPOI2Group = resultsPOI2Group.append(tempResults)
 
+# calculate the running time for random clustering
 rantime = time.time() - rantime
 
-print(dfNodesAvg)
 
-print(resultsPOI2Group)
-print(dfNodesAvg)
-'''
-'''
+# record start time
 ranPerDaytime = time.time()
 # random clustering (each day cluster the users)
 dfNodesRandom = dfNodesAvg
@@ -151,31 +147,33 @@ for travelDay in range(day):
 
     #nextID = currentID + groupSize
         groupUserList = randUserIDs[currentID:nextID]  # userIDs of all users in this group
+        results = results.append(pd.DataFrame([['randomPerDay', 1, len(groupUserList),
+                                                calcIntCosSim(groupUserList, dfInterests, True),
+                                                calcIntCosSim(groupUserList, dfInterests, False),
+                                                calcTopIntRatio(groupUserList, dfInterests),
+                                                calcIntJaccard(groupUserList, dfInterests)]],
+                                              columns=results.columns))
+        #print(results)
+
         currentID = nextID
         temVisitingPath['group' + str(i + 1)] = groupUserList
-        print(groupUserList)
         tempResults = poi2groupOP('clusterPerDay', dfNodesRandom, dfInterests, temVisitingPath['group' + str(i + 1)], startNode, endNode,
-                                     budget, travelDay, startNodeVT, visitedNodePerUsr)
+                                     budget, travelDay, visitedNodePerUsr)
         tempResults['groupID'] = (i + 1) * (travelDay + 1)
         resultsPOI2GroupRanByDay = resultsPOI2GroupRanByDay.append(tempResults)
         resultsPOI2GroupRanByDay = resultsPOI2GroupRanByDay.reset_index(drop = True)
         resultsPOI2GroupRanByDay = resultsPOI2GroupRanByDay.sort_values(['groupID', 'day'], ascending=True)
 
-#print(resultsPOI2GroupRanByDay)
 
 for user in visitedNodePerUsr.keys():
     visitedNodePerUsr[user].insert(0, startNode)
 
-resultsPOI2GroupRanByDay = calcStatsRan(visitedNodePerUsr, dfNodesAvg, dfInterests, startNode, budget)
+resultsPOI2GroupRanByDay = calcStatsRan(visitedNodePerUsr, dfNodesAvg, dfInterests, startNode, budget, day)
 resultsPOI2GroupRanByDay['cluster'] = 'randomByDay'
-
+# calculate running time for randomByDay clustering
 ranPerDaytime = time.time() - ranPerDaytime
 
-
-
-
-print(dfNodesAvg)
-
+# record start time
 kmeanstime = time.time()
 # kmeans clustering
 dfInt = dfInterests.drop(['userID'], axis=1)
@@ -192,30 +190,36 @@ for i in range(groupCount):
         if dfInt.iloc[j]['groupID'] == i:
             groupUserList.append(dfInt.iloc[j]['userID'])
 
-    #cos1 = calcIntCosSim(groupUserList, dfInterests, True)
-    #cos2 = calcIntCosSim(groupUserList, dfInterests, False)
-    #print('cosT: ' + str(cos1))
-    #print('cosF: ' + str(cos2))
+    results = results.append(pd.DataFrame([['kmeans', 1, len(groupUserList),
+                                            calcIntCosSim(groupUserList, dfInterests, True),
+                                            calcIntCosSim(groupUserList, dfInterests, False),
+                                            calcTopIntRatio(groupUserList, dfInterests),
+                                            calcIntJaccard(groupUserList, dfInterests)]], columns=results.columns))
+    #print(results)
 
-    tempResults = poi2groupOP('clusterOnceKmeans', dfNodesAvg, dfInterests, groupUserList, startNode, endNode, budget, day, startNodeVT, visitedNodePerUsr)
+    tempResults = poi2groupOP('clusterOnceKmeans', dfNodesAvg, dfInterests, groupUserList, startNode, endNode, budget, day, visitedNodePerUsr)
     tempResults['cluster'] = 'kMeans'
     tempResults['groupID'] = i + 1
     resultsPOI2GroupKmean = resultsPOI2GroupKmean.append(tempResults)
 
+# calcualte running time for kmeans clustering
 kmeanstime = time.time() - kmeanstime
 
-print(resultsPOI2GroupKmean)
 
 
 resultsPOI2Group = resultsPOI2Group.append(resultsPOI2GroupRanByDay, sort = False)
 resultsPOI2Group = resultsPOI2Group.append(resultsPOI2GroupKmean, sort = False)
 resultsPOI2Group = resultsPOI2Group.reset_index(drop=True)
+results = results.reset_index(drop = True)
 
 
 print(resultsPOI2Group)
+print(results)
+
+resultsPOI2Group.to_csv('recResults_statistic.csv', encoding='utf-8') # save the original results
+results.to_csv('results_statistics.csv', encoding  = 'utf-8') #save the statistics calculation for groups
 
 
-resultsPOI2Group.to_csv('resultstest.csv', encoding='utf-8') # save the original results
 resultsMeanTem = calMean(budget,startNode) # various statistic calculation
 resultsMean = resultsMean.append(resultsMeanTem)
 

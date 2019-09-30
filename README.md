@@ -14,3 +14,8 @@ calcStat.py: We use this file to do different statistics calculation, such as Co
 costProfCat-ToroPOI-all.csv: Sample input data in the form of a cost-profit table, with the following columns/fields: "fromNode", "toNode", "cost", "profit" and "category"  
 userVisits-Toro-allPOI.csv: Sample input data in the form of user-POI visits, with the following columns/fields: "photoID", "userID", "dateTaken", "poiID", "poiTheme", "poiFreq", "seqID"  
 userInt-URelTime-Toro.csv: Sample input data in the form of user interest levels, with the following columns/fields: "userID", "Cultural", "Amusement", "Shopping", "Structure", "Sport", "Beach"  
+## Results Files
+recommend_POI_Results.csv:  Calculate statistics of Tour Solution
+### Parameters
+- 'algo', 'startNode/endNode', 'budget', 'userID', 'totalPOI', 'totalCost', 'totalProfit', 'totalInterest' , 'reachEndNode', 'totalPopInt', 'maxInterest', 'minInterest', 'tour'])
+    

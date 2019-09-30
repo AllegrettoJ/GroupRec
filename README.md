@@ -29,7 +29,7 @@ The dataset used can be found at https://sites.google.com/site/limkwanhui/dataco
 - 'maxInterest': User's maximum interset of category which is also recommended to the whole Itinerary
 - 'minInterest': User's minimum interset of category which is also recommended to the whole Itinerary
 - 'tour': The total tour of itinerary, using the '-' to link two POIs
-**results_statistics.csv**: The statistics calculation of each group
+**results_statistics.csv**: The statistics calculation of each group  
 ### Parameters
 - 'iter': The number of current iteration, there are total 335 loops
 - 'groupSize': The number of users in the group
